@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Draw Polygon on Map with Search</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    <style>
+        #map {
+            height: 600px;
+            width: 100%;
+        }
+        #info {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div id="info">
+        <h3>Drawn Polygons</h3>
+        <div id="polygon-info"></div>
+    </div>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    <script>
+        // Initialize the map
+        var map = L.map('map').setView([51.505, -0.09], 13);
+
+        // Add OpenStreetMap tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Initialize the FeatureGroup to store editable layers
+        var drawnItems = new L.FeatureGroup();
+        map.addLayer(drawnItems);
+
+        // Initialize the draw control and pass it the FeatureGroup of editable layers
+        var drawControl = new L.Control.Draw({
+            edit: {
+                featureGroup: drawnItems
+            },
+            draw: {
+                polygon: true,
+                polyline: false,
+                rectangle: false,
+                circle: false,
+                marker: false
+            }
+        });
+        map.addControl(drawControl);
+
+        // Counter for zones
+        var zoneCounter = 0;
+
+        // Extract coordinates on shape creation
+        map.on('draw:created', function (event) {
+            var layer = event.layer;
+            drawnItems.addLayer(layer);
+            var coordinates = layer.getLatLngs();
+
+            // Increment zone counter
+            zoneCounter++;
+            var zoneLabel = 'Zone ' + String.fromCharCode(64 + zoneCounter);
+
+            // Display the coordinates and zone label
+            displayCoordinates(zoneLabel, coordinates);
+        });
+
+        // Add the search control
+        L.Control.geocoder().addTo(map);
+
+        // Function to display coordinates and zone label
+        function displayCoordinates(label, coordinates) {
+            var container = document.getElementById('polygon-info');
+            var coordString = JSON.stringify(coordinates, null, 2);
+
+            var infoDiv = document.createElement('div');
+            infoDiv.className = 'zone-info';
+
+            var labelElement = document.createElement('h4');
+            labelElement.textContent = label;
+            infoDiv.appendChild(labelElement);
+
+            var coordTextarea = document.createElement('textarea');
+            coordTextarea.rows = 5;
+            coordTextarea.cols = 60;
+            coordTextarea.value = coordString;
+            coordTextarea.readOnly = true;
+            infoDiv.appendChild(coordTextarea);
+
+            var copyButton = document.createElement('button');
+            copyButton.textContent = 'Copy Coordinates';
+            copyButton.onclick = function() {
+                coordTextarea.select();
+                document.execCommand('copy');
+                alert('Coordinates copied to clipboard');
+            };
+            infoDiv.appendChild(copyButton);
+
+            container.appendChild(infoDiv);
+        }
+    </script>
+</body>
+</html>
